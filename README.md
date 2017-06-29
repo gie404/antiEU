@@ -1,4 +1,4 @@
 # antiEU
 # bear
-#CMAKE-usage
+# CMAKE-usage
 https://cognitivewaves.wordpress.com/cmake-and-visual-studio/
