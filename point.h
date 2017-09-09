@@ -47,6 +47,8 @@ public:
 		return Point(-y / nrm, x / nrm);
 	}
 
+	
+
 	friend const Point operator+(const Point &lhv, const Point &rhv);
 	friend const Point operator-(const Point &lhv, const Point &rhv);
 	friend const double operator*(const Point &lhv, const Point &rhv);

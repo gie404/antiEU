@@ -14,7 +14,11 @@
 #include "Intercept.h"
 #include "CompareLine.h"
 
+#include "simple_svg_1.0.0.hpp"
+
 uint64_t fcalls = 0;
+
+
 
 //struct Hasher
 //{
@@ -67,6 +71,72 @@ struct RefLine
 	//~RefLine() { printf("dtor refline\n"); }
 };
 
+void create_svg(const Line &newLine, std::vector<RefLine> &lines)
+{
+	svg::Dimensions dimensions(1000, 1000);
+	svg::Document doc("my_svg.svg", svg::Layout(dimensions, svg::Layout::BottomLeft));
+
+	// Red image border.
+	svg::Polygon border(svg::Stroke(1, svg::Color::Red));
+	border << svg::Point(0, 0) << svg::Point(dimensions.width, 0)
+		<< svg::Point(dimensions.width, dimensions.height) << svg::Point(0, dimensions.height);
+	doc << border;
+
+	double sc = 50;
+	double sx = 500 - 2.5 * sc, sy = 500 - 2.5 * sc;
+	
+	svg::Color::Defaults clr(svg::Color::Defaults::Aqua);
+	
+	std::vector<RefLine> total(lines);
+	total.push_back(RefLine(const_cast<Line*>(&newLine), 0));
+	
+	for each(const RefLine rline in total)
+	{
+		if (rline.l->type == straight)
+		{
+			const StrLine* l = static_cast<const StrLine*>(rline.l);
+			if (fabs(l->n.y) < 1e-7)
+				doc << svg::Line(svg::Point((l->b + 50 * l->n.y) / l->n.x * sc + sx, -50 * sc + sy), svg::Point((l->b - 50 * l->n.y) / l->n.x * sc + sx, +50 * sc + sy), svg::Stroke(0.5, clr));
+			else
+				doc << svg::Line(svg::Point(-50 * sc + sx, (l->b + 50 * l->n.x) / l->n.y * sc + sy), svg::Point(+50 * sc + sx, (l->b - 50 * l->n.x) / l->n.y * sc + sy), svg::Stroke(0.5, clr));
+		}
+		else
+		{
+			const Circle* l = static_cast<const Circle*>(rline.l);
+			doc << svg::Circle(svg::Point(l->c.x * sc + sx, l->c.y * sc + sy), 2 * l->r * sc, svg::Fill(svg::Color::Transparent), svg::Stroke(0.5, clr));
+		}
+		clr = static_cast<svg::Color::Defaults>( (static_cast<uint32_t>(clr) + 1) % static_cast<uint32_t>(svg::Color::Defaults::Yellow) );
+	}
+
+	/*Point A(0, 0);
+	Point B(1.6, 2);
+	Point C(3, 2);
+	Point D(4, 0);
+
+	doc << svg::Circle(svg::Point(0 + sx, 0 + sy), 10, svg::Fill(svg::Color(0, 0, 255)), svg::Stroke(1, svg::Color(200, 250, 150)));
+	doc << svg::Circle(svg::Point(1.6 * sc + sx, 2 * sc + sy), 10, svg::Fill(svg::Color(0, 0, 255)), svg::Stroke(1, svg::Color(200, 250, 150)));
+	doc << svg::Circle(svg::Point(3 * sc + sx, 2 * sc + sy), 10, svg::Fill(svg::Color(0, 0, 255)), svg::Stroke(1, svg::Color(200, 250, 150)));
+	doc << svg::Circle(svg::Point(4 * sc + sx, 0 * sc + sy), 10, svg::Fill(svg::Color(0, 0, 255)), svg::Stroke(1, svg::Color(200, 250, 150)));*/
+
+	// Condensed notation, parenthesis isolate temporaries that are inserted into parents.
+	/*doc << (svg::LineChart(svg::Dimensions(65, 5))
+		<< (svg::Polyline(svg::Stroke(.5, svg::Color::Blue)) << svg::Point(0, 0) << svg::Point(10, 8) << svg::Point(20, 13))
+		<< (svg::Polyline(svg::Stroke(.5, svg::Color::Orange)) << svg::Point(0, 10) << svg::Point(10, 16) << svg::Point(20, 20))
+		<< (svg::Polyline(svg::Stroke(.5, svg::Color::Cyan)) << svg::Point(0, 5) << svg::Point(10, 13) << svg::Point(20, 16)));
+*/
+	/*doc << svg::Text(svg::Point(5, 77), "Simple SVG", svg::Color::Silver, svg::Font(10, "Verdana"));
+
+	doc << (svg::Polygon(svg::Color(200, 160, 220), svg::Stroke(.5, svg::Color(150, 160, 200))) << svg::Point(20, 70)
+		<< svg::Point(25, 72) << svg::Point(33, 70) << svg::Point(35, 60) << svg::Point(25, 55) << svg::Point(18, 63));
+
+	doc << svg::Rectangle(svg::Point(70, 55), 20, 15, svg::Color::Yellow);
+
+	doc << svg::Line(svg::Point(-700, 25), svg::Point(700, 25), svg::Stroke(1.5, svg::Color(0, 0, 255)));
+
+	doc << svg::Circle(svg::Point(60, 10), 10, svg::Fill(svg::Color(0, 0, 255)), svg::Stroke(1, svg::Color(200, 250, 150)));*/
+	doc.save();
+}
+
 inline bool checkForPoint(std::vector<RefPoint> &points, Point& p) noexcept
 {
 	for each (const RefPoint& rp in points)
@@ -79,11 +149,17 @@ inline bool checkForPoint(std::vector<RefPoint> &points, Point& p) noexcept
 
 void printMatch(const Line &newLine, std::vector<RefLine> &lines, unsigned level)
 {
+	static bool need_svg = true;
+	if (need_svg)
+	{
+		create_svg(newLine, lines);
+		need_svg = false;
+	}
 
 	printf("Match, level %d, lines %lld -----------------------\n", level, lines.size() + 1);
 	for each(const RefLine rline in lines)
 	{
-	std::cout << *(rline.l) << std::endl;
+		std::cout << *(rline.l) << std::endl;
 	}
 	std::cout << newLine << std::endl;
 	return;
@@ -350,55 +426,67 @@ long N(int n, int n0)
 
 int main()
 {
+	using namespace std;
 	using namespace std::chrono;
 	
 	steady_clock::time_point t1 = steady_clock::now();
 
-	std::vector<RefPoint> refPoints;
-	std::vector<RefLine> lines;
-	std::vector<RefLine> Lgoals;
-	std::vector<GoalRefPoint*> Pgoals;
-	const unsigned maxLevel = 3;
+	vector<RefPoint> refPoints;
+	vector<RefLine> lines;
+	vector<RefLine> Lgoals;
+	vector<GoalRefPoint*> Pgoals;
+	const unsigned maxLevel = 4;
 
 	refPoints.reserve(10000);
 	lines.reserve(10000);
 	
-	//Point A(0, 0), D, E, F, G, H;
-	//Point B(3.72, 5);
-	//Point C(2, 0);
-	//D = (B + C) / 3;
+	Point A(0, 0);
+	Point B(1.6, 2);
+	Point C(3.5, 2);
+	Point D(4, 0);
+	Point F = (A + D) / 2;
+	Point K, L, M, N;
 
-	//StrLine rl1(A, B);
-	//StrLine rl2(A, C);
+	StrLine rab(A, B);
+	StrLine rac(A, C);
+	StrLine rad(A, D);
+	StrLine rbc(B, C);
+	StrLine rbd(B, D);
+	StrLine rcd(C, D);
 
-	//refPoints.push_back(RefPoint(A, 3));
-	//refPoints.push_back(RefPoint(D, 4));
-	////refPoints.push_back(RefPoint(C, 4));
-	//lines.push_back(RefLine(&rl1, 1));
-	//lines.push_back(RefLine(&rl2, 2));
-	//
-	//StrLine rl3(A, D);
-	//lines.push_back(RefLine(&rl3, 7));
-	///*Circle c1(A, D);
-	//lines.push_back(RefLine(&c1, 7));
-	//Intercept::intercept(rl1, c1, E, G);
-	//refPoints.push_back(RefPoint(E, 7));
-	//Intercept::intercept(rl2, c1, E, G);
-	//refPoints.push_back(RefPoint(E, 7));*/
-	////Pgoals.push_back(new GoalRefPoint(B * B.norm() / C.norm(), 7, true));
-	//
-	//Circle c1(D, A);
-	//Circle c2(2 * D, D);
-	//Intercept::intercept(rl1, c2, E, G);
-	//Circle c3(A, G);
-	////Intercept::intercept(rl3, c3, E, G);
-	//Intercept::intercept(c2, c3, F, H);
+	StrLine rbf(B, F);
+	StrLine rcf(C, F);
 
-	//Point X = D * 3 / 2;
-	//StrLine rl4(E, H);
-	//Intercept::intercept(rl4, c1, F, H);
-	//Lgoals.push_back(RefLine(new StrLine(B, C), 7));
+	Intercept::intercept(rac, rbf, L, K);
+	Intercept::intercept(rbd, rcf, M, N);
 
+	refPoints.push_back(RefPoint(A, 1 << 0));
+	refPoints.push_back(RefPoint(B, 1 << 1));
+	refPoints.push_back(RefPoint(C, 1 << 2));
+	refPoints.push_back(RefPoint(D, 1 << 3));
+	
+	lines.push_back(RefLine(&rab, 1 << 0 & 1 << 1));
+	lines.push_back(RefLine(&rac, 1 << 0 & 1 << 2));
+	lines.push_back(RefLine(&rad, 1 << 0 & 1 << 3));
+	lines.push_back(RefLine(&rbc, 1 << 1 & 1 << 2));
+	lines.push_back(RefLine(&rbd, 1 << 1 & 1 << 3));
+	lines.push_back(RefLine(&rcd, 1 << 2 & 1 << 3));
+
+	StrLine rlm(L, M);
+	Lgoals.push_back(RefLine(&rlm, 15));
+
+	cout << "rab " << rab << endl;
+	cout << "rac " << rac << endl;
+	cout << "rad " << rad << endl;
+	cout << "rbc " << rbc << endl;
+	cout << "rbd " << rbd << endl;
+	cout << "rcd " << rcd << endl;
+
+	cout << "L " << L.x << " " << L.y << endl;
+	cout << "M " << M.x << " " << M.y << endl;
+	
+	//create_svg(*Lgoals[0].l, lines);
+	
 	//---------------------------------------------------------------------------
 	//StrLine rl1(Point(0, -1), 1);
 	//StrLine rl2(Point(0.627, sqrt(1 - 0.627 *0.627)), 1);
@@ -444,7 +532,7 @@ int main()
 
 
 	//---------------------------------------------------------------------------
-	Point A(0, 0), B(1, 0), C(6, 0);
+	/*Point A(0, 0), B(1, 0), C(6, 0);
 	refPoints.push_back(RefPoint(A, 1));
 	refPoints.push_back(RefPoint(C, 2));
 	lines.push_back(RefLine(new StrLine(A, C), 3));
@@ -457,7 +545,7 @@ int main()
 
 	GoalRefPoint neededPoint(B, 3, true);
 	
-	Pgoals.push_back(&neededPoint);
+	Pgoals.push_back(&neededPoint);*/
 
 	
 	size_t maxNum = maxLevel * (maxLevel - 1) + refPoints.size() + 100;
