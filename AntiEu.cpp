@@ -1,12 +1,12 @@
 // AntiEu.cpp : Defines the entry point for the console application.
 //
 
-#include "stdafx.h"
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
 #include <chrono>
 #include <iostream>
+#include <cstring>
 
 #include "point.h"
 #include "StrLine.h"
@@ -90,7 +90,7 @@ void create_svg(const Line &newLine, std::vector<RefLine> &lines)
 	std::vector<RefLine> total(lines);
 	total.push_back(RefLine(const_cast<Line*>(&newLine), 0));
 	
-	for each(const RefLine rline in total)
+	for (const RefLine rline : total)
 	{
 		if (rline.l->type == straight)
 		{
@@ -134,12 +134,12 @@ void create_svg(const Line &newLine, std::vector<RefLine> &lines)
 	doc << svg::Line(svg::Point(-700, 25), svg::Point(700, 25), svg::Stroke(1.5, svg::Color(0, 0, 255)));
 
 	doc << svg::Circle(svg::Point(60, 10), 10, svg::Fill(svg::Color(0, 0, 255)), svg::Stroke(1, svg::Color(200, 250, 150)));*/
-	doc.save();
+	std::cout << "saving doc result " << doc.save();
 }
 
 inline bool checkForPoint(std::vector<RefPoint> &points, Point& p) noexcept
 {
-	for each (const RefPoint& rp in points)
+	for (const RefPoint& rp : points)
 	{
 		if (rp.p == p)
 			return true;
@@ -156,8 +156,8 @@ void printMatch(const Line &newLine, std::vector<RefLine> &lines, unsigned level
 		need_svg = false;
 	}
 
-	printf("Match, level %d, lines %lld -----------------------\n", level, lines.size() + 1);
-	for each(const RefLine rline in lines)
+	printf("Match, level %d, lines %ld -----------------------\n", level, lines.size() + 1);
+	for (const RefLine rline : lines)
 	{
 		std::cout << *(rline.l) << std::endl;
 	}
@@ -167,7 +167,7 @@ void printMatch(const Line &newLine, std::vector<RefLine> &lines, unsigned level
 
 inline bool checkForLine(std::vector<RefLine> &lines, Line &newLine) noexcept
 {
-	for each(const RefLine& rLine in lines)
+	for (const RefLine& rLine : lines)
 	{
 		if (*rLine.l == newLine)
 			return true;
@@ -187,13 +187,13 @@ void findLine(Line &&newLine, uint32_t newLineInh, std::vector<RefPoint> &refPoi
 
 	if (isNewLine)
 	{
-		for each(const RefLine& rLine in lines)
+		for (const RefLine& rLine : lines)
 		{
 			if (*rLine.l == newLine)
 				return;
 		}
 		
-		for each (GoalRefPoint* point in Pgoals)
+		for  (GoalRefPoint* point : Pgoals)
 		{
 			if (point->onLine == false)
 			{
@@ -227,14 +227,14 @@ void findLine(Line &&newLine, uint32_t newLineInh, std::vector<RefPoint> &refPoi
 			return;
 
 		
-		for each(const RefLine& rline in lines)
+		for (const RefLine& rline : lines)
 		{
 			RefPoint a, b;
 			unsigned num = Intercept::intercept(*rline.l, newLine, a.p, b.p);
 
 			bool newA = num > 0;
 			bool newB = num > 1;
-			for each(const RefPoint &rp in refPoints)
+			for (const RefPoint &rp : refPoints)
 			{
 				if (!newA && !newB)
 					break;
@@ -441,49 +441,39 @@ int main()
 	lines.reserve(10000);
 	
 	Point A(0, 0);
-	Point B(1.6, 2);
-	Point C(3.5, 2);
-	Point D(4, 0);
-	Point F = (A + D) / 2;
-	Point K, L, M, N;
-
+	Point B(1.31, 4);
+	Point C(6, 0);
+	Point D = (A + B) / 2;
+	Point F = (C + B) / 2;
+	Point E, G, H = C / 3;
+	
 	StrLine rab(A, B);
 	StrLine rac(A, C);
-	StrLine rad(A, D);
 	StrLine rbc(B, C);
-	StrLine rbd(B, D);
-	StrLine rcd(C, D);
-
-	StrLine rbf(B, F);
-	StrLine rcf(C, F);
-
-	Intercept::intercept(rac, rbf, L, K);
-	Intercept::intercept(rbd, rcf, M, N);
-
+	
+	Circle c1(C / 6, A);
+	
 	refPoints.push_back(RefPoint(A, 1 << 0));
 	refPoints.push_back(RefPoint(B, 1 << 1));
 	refPoints.push_back(RefPoint(C, 1 << 2));
-	refPoints.push_back(RefPoint(D, 1 << 3));
 	
 	lines.push_back(RefLine(&rab, 1 << 0 & 1 << 1));
 	lines.push_back(RefLine(&rac, 1 << 0 & 1 << 2));
-	lines.push_back(RefLine(&rad, 1 << 0 & 1 << 3));
 	lines.push_back(RefLine(&rbc, 1 << 1 & 1 << 2));
-	lines.push_back(RefLine(&rbd, 1 << 1 & 1 << 3));
-	lines.push_back(RefLine(&rcd, 1 << 2 & 1 << 3));
 
-	StrLine rlm(L, M);
-	Lgoals.push_back(RefLine(&rlm, 15));
+	lines.push_back(RefLine(&c1, 7));
+	Intercept::intercept(c1, rab, E, G);
+	refPoints.push_back(RefPoint(E, 7));
+	refPoints.push_back(RefPoint(G, 7));
+	refPoints.push_back(RefPoint(H, 1 << 2));
+	
+	StrLine rdf(D, F);
+	Lgoals.push_back(RefLine(&rdf, 7));
 
 	cout << "rab " << rab << endl;
 	cout << "rac " << rac << endl;
-	cout << "rad " << rad << endl;
 	cout << "rbc " << rbc << endl;
-	cout << "rbd " << rbd << endl;
-	cout << "rcd " << rcd << endl;
-
-	cout << "L " << L.x << " " << L.y << endl;
-	cout << "M " << M.x << " " << M.y << endl;
+	
 	
 	//create_svg(*Lgoals[0].l, lines);
 	

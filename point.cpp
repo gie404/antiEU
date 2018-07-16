@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "point.h"
 
 const Point Point::zero = Point(0, 0);

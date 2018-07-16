@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "CompareLine.h"
 
 bool operator==(const Line &lhv, const Line &rhv)
