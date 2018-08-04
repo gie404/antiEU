@@ -1,5 +1,3 @@
-// AntiEu.cpp : Defines the entry point for the console application.
-//
 
 #include <vector>
 #include <unordered_map>
@@ -18,27 +16,6 @@
 
 uint64_t fcalls = 0;
 
-
-
-//struct Hasher
-//{
-//	std::size_t operator()(const Point& k) const
-//	{
-//		using std::size_t;
-//		using std::hash;
-//		
-//		return ((hash<long>()((long)round(k.x * invPres))
-//			^ (hash<long>()((long)round(k.y * invPres)) << 1)) >> 1);
-//	}
-//};
-//
-//struct EqualFn
-//{
-//	bool operator() (Point const& t1, Point const& t2) const
-//	{
-//		return t1 == t2;
-//	}
-//};
 
 struct RefPoint
 {
@@ -424,7 +401,7 @@ long N(int n, int n0)
 	return (n * n - n) * 2 / 3 + n0;
 }
 
-int main()
+int antiEu(long int depth)
 {
 	using namespace std;
 	using namespace std::chrono;
@@ -435,109 +412,61 @@ int main()
 	vector<RefLine> lines;
 	vector<RefLine> Lgoals;
 	vector<GoalRefPoint*> Pgoals;
-	const unsigned maxLevel = 4;
+	const auto maxLevel = static_cast<unsigned>(depth);
 
 	refPoints.reserve(10000);
 	lines.reserve(10000);
 	
 	Point A(0, 0);
-	Point B(1.31, 4);
+	Point B(4.31, 0);
 	Point C(6, 0);
 	Point D = (A + B) / 2;
-	Point F = (C + B) / 2;
-	Point E, G, H = C / 3;
+	Point E = (C + B) / 2;
+	Point F, G, H = C / 3;
 	
-	StrLine rab(A, B);
-	StrLine rac(A, C);
-	StrLine rbc(B, C);
-	
-	Circle c1(C / 6, A);
+	//~ StrLine rab(A, B);
+	//~ StrLine rac(A, C);
+	//~ StrLine rbc(B, C);
+	float r1 = 1.1;
+	float r2 = 2.7;
+	Circle c1(A, r1);
+	Circle c2(B, r2);
+	Circle c3(A, 2*r2 - 2*r1);
+	Circle c4(B, 2*r2 - 2*r1);
+	Circle c5(A, B);
+	Circle c6(B, A);
 	
 	refPoints.push_back(RefPoint(A, 1 << 0));
 	refPoints.push_back(RefPoint(B, 1 << 1));
-	refPoints.push_back(RefPoint(C, 1 << 2));
+	//~ refPoints.push_back(RefPoint(C, 1 << 2));
 	
-	lines.push_back(RefLine(&rab, 1 << 0 & 1 << 1));
-	lines.push_back(RefLine(&rac, 1 << 0 & 1 << 2));
-	lines.push_back(RefLine(&rbc, 1 << 1 & 1 << 2));
+	lines.push_back(RefLine(&c1, 1 << 0));
+	lines.push_back(RefLine(&c2, 1 << 1));
+	//~ lines.push_back(RefLine(&rbc, 1 << 1 & 1 << 2));
 
-	lines.push_back(RefLine(&c1, 7));
-	Intercept::intercept(c1, rab, E, G);
-	refPoints.push_back(RefPoint(E, 7));
-	refPoints.push_back(RefPoint(G, 7));
-	refPoints.push_back(RefPoint(H, 1 << 2));
+	//~ lines.push_back(RefLine(&c1, 7));
+	Intercept::intercept(c3, c6, C, D);
+	StrLine tmp(C, A);
+//	cout << tmp << endl;
+	Intercept::intercept(c1, tmp, C, D);
+//	cout << C.x << "  " << C.y << endl;
 	
-	StrLine rdf(D, F);
-	Lgoals.push_back(RefLine(&rdf, 7));
-
-	cout << "rab " << rab << endl;
-	cout << "rac " << rac << endl;
-	cout << "rbc " << rbc << endl;
+	Intercept::intercept(c4, c5, E, D);
+	StrLine tmp2(E, B);
+//	cout << tmp2 << endl;
+	Intercept::intercept(c2, tmp2, E, D);
+//	cout << D.x << "  " << D.y << endl;
 	
 	
-	//create_svg(*Lgoals[0].l, lines);
+	//~ refPoints.push_back(RefPoint(E, 7));
+	//~ refPoints.push_back(RefPoint(G, 7));
+	//~ refPoints.push_back(RefPoint(H, 1 << 2));
 	
-	//---------------------------------------------------------------------------
-	//StrLine rl1(Point(0, -1), 1);
-	//StrLine rl2(Point(0.627, sqrt(1 - 0.627 *0.627)), 1);
-	//StrLine rl3(Point(-0.41, sqrt(1 - 0.41 * 0.41)), 1);
-	//Point A, B, C, D, E, F, G;
-	//Intercept::intercept(rl1, rl2, D, G);
-	//Intercept::intercept(rl1, rl3, E, G);
-	//Intercept::intercept(rl3, rl2, F, G);
+	StrLine rdf(D, C);
+	//~ Lgoals.push_back(RefLine(&c3, 3));
+	//~ Lgoals.push_back(RefLine(&c4, 3));
+	Lgoals.push_back(RefLine(&rdf, 3));
 
-	//refPoints.push_back(RefPoint(D, 1));
-	//refPoints.push_back(RefPoint(E, 2));
-	//refPoints.push_back(RefPoint(F, 4));
-
-	////refPoints.push_back(RefPoint(Point(0, 0), 7));
-
-	//lines.push_back(RefLine(&rl1, 3));
-	//lines.push_back(RefLine(&rl2, 5));
-	//lines.push_back(RefLine(&rl3, 6));
-
-	////Circle c1(D, F);
-	////Circle c2(F, D);
-	////lines.push_back(RefLine(&c1, 5));
-	////lines.push_back(RefLine(&c2, 5));
-
-	////Intercept::intercept(c1, rl1, A, B);
-	////refPoints.push_back(RefPoint(A, 7));
-	/////*Intercept::intercept(c1, rl3, A, B);
-	////refPoints.push_back(RefPoint(A, 7));*/
-	////Intercept::intercept(c2, rl3, A, B);
-	////refPoints.push_back(RefPoint(B, 7));
-	////Intercept::intercept(c2, rl1, A, B);
-	////refPoints.push_back(RefPoint(A, 7));
-
-	////Intercept::intercept(c1, c2, A, B);
-	////refPoints.push_back(RefPoint(A, 5));
-	////refPoints.push_back(RefPoint(B, 5));
-
-	//Circle nc(Point(0, 0), 1);
-	//Intercept::intercept(nc, rl2, A, B);
-	////Lgoals.push_back(RefLine(&nc, 7));
-	////Pgoals.push_back(new GoalRefPoint(Point(0, 0), 7, false));
-	//Pgoals.push_back(new GoalRefPoint(A, 7, true));
-
-
-	//---------------------------------------------------------------------------
-	/*Point A(0, 0), B(1, 0), C(6, 0);
-	refPoints.push_back(RefPoint(A, 1));
-	refPoints.push_back(RefPoint(C, 2));
-	lines.push_back(RefLine(new StrLine(A, C), 3));
-
-	refPoints.push_back(RefPoint( (A + C)/2, 3));
-	lines.push_back(RefLine(new StrLine(B, 3), 3));
-
-	refPoints.push_back(RefPoint((A + C) * 3 / 4, 3));
-	lines.push_back(RefLine(new StrLine(B, 4.5), 3));
-
-	GoalRefPoint neededPoint(B, 3, true);
-	
-	Pgoals.push_back(&neededPoint);*/
-
-	
 	size_t maxNum = maxLevel * (maxLevel - 1) + refPoints.size() + 100;
 	int** RP_Table = new int*[maxNum];
 	for (size_t i = 0; i < maxNum; ++i)
@@ -550,7 +479,6 @@ int main()
 		N(0, n0) * N(1, n0) * N(2, n0) * N(3, n0) * N(4, n0) * N(5, n0) * N(6, n0));*/
 
 	findLine(Circle(Point(3, 2), Point(4, 2)), 0, refPoints, lines, Lgoals, Pgoals, RP_Table, 0, maxLevel, false);
-	//findLine(Circle(Point(3, 2), Point(4, 2)), 0, false);
 
 	steady_clock::time_point t2 = steady_clock::now();
 	duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
@@ -558,7 +486,6 @@ int main()
 	std::cout.flush();
 	printf("End of program\n");
 
-	getchar();
     return 0;
 }
 

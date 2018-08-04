@@ -24,7 +24,7 @@ public:
 	{
 	}
 
-	virtual void toStream(std::ostream &ws) const = 0;
+	virtual void toStream(std::ostream& ws) const = 0;
 	virtual bool belongsToMe(const Point& p) const = 0;
 	/*virtual bool usefullForConstruct(const Point& p, int i) = 0;
 	virtual void clearUFC() = 0;*/
